@@ -181,5 +181,5 @@ dfs = [acs_tenure_merge, acs_educationbysex_merge, acs_raceeth_merge, acs_mfi_me
 
 bates_df= reduce(lambda  left,right: pd.merge(left,right,on=['GEO_ID','NAME'], how='inner'), dfs)
 
-bates_df.to_csv('bates_df.csv')
+bates_df.to_csv('bates_df.csv', index = False)
 
