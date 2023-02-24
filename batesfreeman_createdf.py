@@ -5,6 +5,7 @@ Calculating the Bates (2013) gentrification indices and the Freeman (2005) gentr
 import pandas as pd
 import os
 from functools import reduce
+import geopandas as gpd
 
 os.chdir('/Users/winncostantini/gus8066/gentrification-indices/bates-freeman-data')
 
@@ -22,16 +23,20 @@ acs_2010_tenure = pd.read_csv('ACS_2010_tenure.csv', skiprows= [1])
 
 
 #Rename relevant columns and drop unecessary columns
-acs_2020_tenure = acs_2020_tenure.rename(columns = {'B25003_001E': 'pop_tenure', 'B25003_001M':'pop_tenure_e', 'B25003_002E': 'owners', 'B25003_002M':'owners_e', 'B25003_003E': 'renters', 'B25003_003M':'renters_e'})
+acs_2020_tenure = acs_2020_tenure.rename(columns = {'B25003_001E': 'popten', 'B25003_001M':'popten_e', 'B25003_002E': 'owner', 'B25003_002M':'owner_e', 'B25003_003E': 'renter', 'B25003_003M':'renter_e'})
 
 acs_2020_tenure.dropna(axis='columns', inplace = True)
 
-acs_2010_tenure = acs_2010_tenure.rename(columns = {'B25003_001E': 'pop_tenure', 'B25003_001M':'pop_tenure_e', 'B25003_002E': 'owners', 'B25003_002M':'owners_e', 'B25003_003E': 'renters', 'B25003_003M':'renters_e'})
+acs_2020_tenure = acs_2020_tenure[['GEO_ID', 'NAME', 'popten', 'owner', 'renter']]
+
+acs_2010_tenure = acs_2010_tenure.rename(columns = {'B25003_001E': 'popten', 'B25003_001M':'popten_e', 'B25003_002E': 'owner', 'B25003_002M':'owner_e', 'B25003_003E': 'renter', 'B25003_003M':'renter_e'})
 
 acs_2010_tenure.dropna(axis='columns', inplace = True)
 
+acs_2010_tenure = acs_2010_tenure[['GEO_ID', 'NAME', 'popten', 'owner', 'renter']]
+
 #Join by GEO_ID
-acs_tenure_merge = acs_2010_tenure.merge(acs_2020_tenure, how = 'inner', on = ['GEO_ID', 'NAME'], suffixes = ('_1', '_2'))
+acs_tenure_merge = acs_2010_tenure.merge(acs_2020_tenure, how = 'inner', on = ['GEO_ID', 'NAME'], suffixes = ('1', '2'))
 
 
 #%%
@@ -41,16 +46,16 @@ acs_2020_raceeth = pd.read_csv('ACS_2020_raceeth.csv', skiprows= [1])
 acs_2010_raceeth = pd.read_csv('ACS_2010_raceeth.csv', skiprows= [1]) 
 
 #Rename relevant columns and drop unecessary columns
-acs_2010_raceeth = acs_2010_raceeth.rename(columns = {'B03002_001E':'pop_race', 'B03002_001M':'pop_race_e', 'B03002_003E':'white_nhl', 'B03002_003M':'white_nhl_e'})
+acs_2010_raceeth = acs_2010_raceeth.rename(columns = {'B03002_001E':'poprac', 'B03002_001M':'poprac_e', 'B03002_003E':'white', 'B03002_003M':'white_e'})
 
-acs_2010_raceeth = acs_2010_raceeth[['GEO_ID', 'NAME', 'pop_race', 'pop_race_e', 'white_nhl', 'white_nhl_e']]
+acs_2010_raceeth = acs_2010_raceeth[['GEO_ID', 'NAME', 'poprac', 'white']]
 
-acs_2020_raceeth = acs_2020_raceeth.rename(columns = {'B03002_001E':'pop_race', 'B03002_001M':'pop_race_e', 'B03002_003E':'white_nhl', 'B03002_003M':'white_nhl_e'})
+acs_2020_raceeth = acs_2020_raceeth.rename(columns = {'B03002_001E':'poprac', 'B03002_001M':'poprac_e', 'B03002_003E':'white', 'B03002_003M':'white_e'})
 
-acs_2020_raceeth = acs_2020_raceeth[['GEO_ID', 'NAME', 'pop_race', 'pop_race_e', 'white_nhl', 'white_nhl_e']]
+acs_2020_raceeth = acs_2020_raceeth[['GEO_ID', 'NAME', 'poprac', 'white']]
 
 #join by GEO_ID
-acs_raceeth_merge = acs_2010_raceeth.merge(acs_2020_raceeth, how = 'inner', on = [ 'GEO_ID', 'NAME'], suffixes = ('_1', '_2'))
+acs_raceeth_merge = acs_2010_raceeth.merge(acs_2020_raceeth, how = 'inner', on = [ 'GEO_ID', 'NAME'], suffixes = ('1', '2'))
 
 
 #%%
@@ -60,16 +65,17 @@ acs_2020_educationbysex = pd.read_csv('ACS_2020_educationbysex.csv', skiprows= [
 acs_2010_educationbysex = pd.read_csv('ACS_2010_educationbysex.csv', skiprows= [1]) 
 
 #Rename relevant columns and drop unecessary columns
-acs_2020_educationbysex = acs_2020_educationbysex.rename(columns = {'B15002_001E':'pop_edu', 'B15002_001M':'pop_edu_e', 'B15002_002E':'pop_edu_m', 'B15002_002M':'pop_edu_m_e', 'B15002_014E':'ASdegree_m', 'B15002_014M':'ASdegree_m_e', 'B15002_015E':'BAdegree_m', 'B15002_015M':'BAdegree_m_e', 'B15002_016E':'MAdegree_m', 'B15002_016M':'MAdegree_m_e', 'B15002_017E':'profdegree_m', 'B15002_017M':'profdegree_m_e', 'B15002_018E':'docdegree_m', 'B15002_018M': 'docdegree_m_e','B15002_019E':'pop_edu_f', 'B15002_019M':'pop_edu_f_e', 'B15002_031E':'ASdegree_f', 'B15002_031M':'ASdegree_f_e', 'B15002_032E':'BAdegree_f', 'B15002_032M':'BAdegree_f_e', 'B15002_033E':'MAdegree_f', 'B15002_033M':'MAdegree_f_e', 'B15002_034E':'profdegree_f', 'B15002_034M':'profdegree_f_e', 'B15002_035E':'docdegree_f', 'B15002_035M': 'docdegree_f_e'})
+acs_2020_educationbysex = acs_2020_educationbysex.rename(columns = {'B15002_001E':'popedu', 'B15002_001M':'popedu_e', 'B15002_002E':'popedum', 'B15002_002M':'popedum_e', 'B15002_014E':'ASdegm', 'B15002_014M':'ASdegm_e', 'B15002_015E':'BAdegm', 'B15002_015M':'BAdegm_e', 'B15002_016E':'MAdegm', 'B15002_016M':'MAdegm_e', 'B15002_017E':'prodegm', 'B15002_017M':'prodegm_e', 'B15002_018E':'drdegm', 'B15002_018M': 'drdegm_e','B15002_019E':'popeduf', 'B15002_019M':'popeduf_e', 'B15002_031E':'ASdegf', 'B15002_031M':'ASdegf_e', 'B15002_032E':'BAdegf', 'B15002_032M':'BAdegf_e', 'B15002_033E':'MAdegf', 'B15002_033M':'MAdegf_e', 'B15002_034E':'prodegf', 'B15002_034M':'prodegf_e', 'B15002_035E':'drdegf', 'B15002_035M': 'drdegf_e'})
 
-acs_2020_educationbysex = acs_2020_educationbysex[['GEO_ID', 'NAME', 'pop_edu','pop_edu_e','pop_edu_m','pop_edu_m_e','ASdegree_m', 'ASdegree_m_e', 'BAdegree_m', 'BAdegree_m_e','MAdegree_m', 'MAdegree_m_e', 'profdegree_m', 'profdegree_m_e', 'docdegree_m', 'docdegree_m_e','pop_edu_f', 'pop_edu_f_e', 'ASdegree_f', 'ASdegree_f_e', 'BAdegree_f', 'BAdegree_f_e','MAdegree_f', 'MAdegree_f_e', 'profdegree_f', 'profdegree_f_e','docdegree_f', 'docdegree_f_e']]
+acs_2020_educationbysex = acs_2020_educationbysex[['GEO_ID', 'NAME', 'popedu','popedum','ASdegm', 'BAdegm', 'MAdegm','prodegm', 'drdegm','popeduf', 'ASdegf',  'BAdegf', 'MAdegf','prodegf', 'drdegf']]
 
-acs_2010_educationbysex = acs_2010_educationbysex.rename(columns = {'B15002_001E':'pop_edu', 'B15002_001M':'pop_edu_e', 'B15002_002E':'pop_edu_m', 'B15002_002M':'pop_edu_m_e', 'B15002_014E':'ASdegree_m', 'B15002_014M':'ASdegree_m_e', 'B15002_015E':'BAdegree_m', 'B15002_015M':'BAdegree_m_e', 'B15002_016E':'MAdegree_m', 'B15002_016M':'MAdegree_m_e', 'B15002_017E':'profdegree_m', 'B15002_017M':'profdegree_m_e', 'B15002_018E':'docdegree_m', 'B15002_018M': 'docdegree_m_e','B15002_019E':'pop_edu_f', 'B15002_019M':'pop_edu_f_e', 'B15002_031E':'ASdegree_f', 'B15002_031M':'ASdegree_f_e', 'B15002_032E':'BAdegree_f', 'B15002_032M':'BAdegree_f_e', 'B15002_033E':'MAdegree_f', 'B15002_033M':'MAdegree_f_e', 'B15002_034E':'profdegree_f', 'B15002_034M':'profdegree_f_e', 'B15002_035E':'docdegree_f', 'B15002_035M': 'docdegree_f_e'})
+acs_2010_educationbysex = acs_2010_educationbysex.rename(columns = {'B15002_001E':'popedu', 'B15002_001M':'popedu_e', 'B15002_002E':'popedum', 'B15002_002M':'popedum_e', 'B15002_014E':'ASdegm', 'B15002_014M':'ASdegm_e', 'B15002_015E':'BAdegm', 'B15002_015M':'BAdegm_e', 'B15002_016E':'MAdegm', 'B15002_016M':'MAdegm_e', 'B15002_017E':'prodegm', 'B15002_017M':'prodegm_e', 'B15002_018E':'drdegm', 'B15002_018M': 'drdegm_e','B15002_019E':'popeduf', 'B15002_019M':'popeduf_e', 'B15002_031E':'ASdegf', 'B15002_031M':'ASdegf_e', 'B15002_032E':'BAdegf', 'B15002_032M':'BAdegf_e', 'B15002_033E':'MAdegf', 'B15002_033M':'MAdegf_e', 'B15002_034E':'prodegf', 'B15002_034M':'prodegf_e', 'B15002_035E':'drdegf', 'B15002_035M': 'drdegf_e'})
 
-acs_2010_educationbysex = acs_2010_educationbysex[['GEO_ID', 'NAME', 'pop_edu','pop_edu_e','pop_edu_m','pop_edu_m_e','ASdegree_m', 'ASdegree_m_e', 'BAdegree_m', 'BAdegree_m_e','MAdegree_m', 'MAdegree_m_e', 'profdegree_m', 'profdegree_m_e', 'docdegree_m', 'docdegree_m_e','pop_edu_f', 'pop_edu_f_e', 'ASdegree_f', 'ASdegree_f_e', 'BAdegree_f', 'BAdegree_f_e','MAdegree_f', 'MAdegree_f_e', 'profdegree_f', 'profdegree_f_e','docdegree_f', 'docdegree_f_e']]
+acs_2010_educationbysex = acs_2010_educationbysex[['GEO_ID', 'NAME', 'popedu', 'popedum','popedum_e','ASdegm', 'BAdegm', 'MAdegm', 'prodegm',  'drdegm', 'popeduf',  'ASdegf',  'BAdegf', 'MAdegf', 'prodegf', 'drdegf']]
+
 
 #Inner join 2010 and 2020
-acs_educationbysex_merge = acs_2010_educationbysex.merge(acs_2020_educationbysex, how = 'inner', on = ['GEO_ID','NAME'], suffixes = ('_1', '_2'))
+acs_educationbysex_merge = acs_2010_educationbysex.merge(acs_2020_educationbysex, how = 'inner', on = ['GEO_ID','NAME'], suffixes = ('1', '2'))
 
 
 #%%
@@ -81,16 +87,20 @@ acs_2010_mfi = pd.read_csv('ACS_2010_MFI.csv', skiprows= [1])
 #Rename relevant columns and drop unnecessary columns
 acs_2010_mfi = acs_2010_mfi.rename(columns = {'B19113_001E':'mfi', 'B19113_001M':'mfi_e'})
 
-acs_2010_mfi = acs_2010_mfi[['GEO_ID', 'NAME', 'mfi', 'mfi_e']]
+acs_2010_mfi = acs_2010_mfi[['GEO_ID', 'NAME', 'mfi']]
 
 acs_2020_mfi = acs_2020_mfi.rename(columns = {'B19113_001E':'mfi', 'B19113_001M':'mfi_e'})
 
-acs_2020_mfi = acs_2020_mfi[['GEO_ID', 'NAME', 'mfi', 'mfi_e']]
+acs_2020_mfi = acs_2020_mfi[['GEO_ID', 'NAME', 'mfi']]
 
 #Inner join 2010 and 2020
-acs_mfi_merge = acs_2010_mfi.merge(acs_2020_mfi, how = 'inner', on = ['GEO_ID','NAME'], suffixes = ('_1', '_2'))
+acs_mfi_merge = acs_2010_mfi.merge(acs_2020_mfi, how = 'inner', on = ['GEO_ID','NAME'], suffixes = ('1', '2'))
 
-acs_mfi_merge = acs_mfi_merge[(acs_mfi_merge['mfi_2'] != '-') & (acs_mfi_merge['mfi_1'] != '-') & (acs_mfi_merge['mfi_e_2'] != '***')].astype({'mfi_1':'int64', 'mfi_e_1': 'int64', 'mfi_2': 'int64', 'mfi_e_2':'int64'})
+acs_mfi_merge['mfi2'] = acs_mfi_merge['mfi2'].str.extract(pat='(\d+)', expand = False)
+acs_mfi_merge.dropna(inplace = True)
+
+
+acs_mfi_merge = acs_mfi_merge[(acs_mfi_merge['mfi2'] != '-') & (acs_mfi_merge['mfi1'] != '-')].astype({'mfi1':'int64', 'mfi2': 'int64'})
 
 
 #%%
@@ -101,9 +111,9 @@ acs_2010_mhi = pd.read_csv('ACS_2010_MHI.csv', skiprows= [1])
 #Rename relevant columns and drop unnecessary columns
 acs_2010_mhi = acs_2010_mhi.rename(columns = {'B19013_001E':'mhi', 'B19013_001M':'mhi_e'})
 
-acs_2010_mhi = acs_2010_mhi[['GEO_ID', 'NAME', 'mhi', 'mhi_e']]
+acs_2010_mhi = acs_2010_mhi[['GEO_ID', 'NAME', 'mhi']]
 
-acs_2010_mhi = acs_2010_mhi[acs_2010_mhi['mhi'] != '-'].astype({'mhi':'int64', 'mhi_e':'int64'})
+acs_2010_mhi = acs_2010_mhi[acs_2010_mhi['mhi'] != '-'].astype({'mhi':'int64'})
 
 #Import ACS_2020_MHI.csv
 acs_2020_mhi = pd.read_csv('ACS_2020_MHI.csv', skiprows= [1]) 
@@ -111,13 +121,13 @@ acs_2020_mhi = pd.read_csv('ACS_2020_MHI.csv', skiprows= [1])
 #Rename relevant columns and drop unnecessary columns
 acs_2020_mhi = acs_2020_mhi.rename(columns = {'B19013_001E':'mhi', 'B19013_001M':'mhi_e'})
 
-acs_2020_mhi = acs_2020_mhi[['GEO_ID', 'NAME', 'mhi', 'mhi_e']]
+acs_2020_mhi = acs_2020_mhi[['GEO_ID', 'NAME', 'mhi']]
 
-acs_2020_mhi = acs_2020_mhi[acs_2020_mhi['mhi'] != '-'].astype({'mhi':'int64', 'mhi_e':'int64'})
+acs_2020_mhi = acs_2020_mhi[acs_2020_mhi['mhi'] != '-'].astype({'mhi':'int64'})
 
 
 #Inner join 2010 and 2020
-acs_mhi_merge = acs_2010_mhi.merge(acs_2020_mhi, how = 'inner', on = ['GEO_ID','NAME'], suffixes = ('_1', '_2'))
+acs_mhi_merge = acs_2010_mhi.merge(acs_2020_mhi, how = 'inner', on = ['GEO_ID','NAME'], suffixes = ('1', '2'))
 ##ADD TO FUNCTION
 #Calculate citywide median and 40th percentile and MOE
 
@@ -131,29 +141,29 @@ acs_2020_housevalue = pd.read_csv('ACS_2020_housevalue.csv', skiprows= [1])
 census_2000_housevalue = pd.read_csv('Census_2000_housevalue.csv', skiprows= [1]) 
 
 #Rename relevant columns and drop unnecessary columns
-acs_2010_housevalue = acs_2010_housevalue.rename(columns = {'B25077_001E':'medhousevalue_1', 'B25077_001M':'medhousevalue_e_1'})
+acs_2010_housevalue = acs_2010_housevalue.rename(columns = {'B25077_001E':'mhv1', 'B25077_001M':'mhv_e1'})
 
-acs_2010_housevalue = acs_2010_housevalue[['GEO_ID', 'NAME', 'medhousevalue_1', 'medhousevalue_e_1']]
+acs_2010_housevalue = acs_2010_housevalue[['GEO_ID', 'NAME', 'mhv1']]
 
-acs_2010_housevalue = acs_2010_housevalue[acs_2010_housevalue['medhousevalue_1'] != '-']
+acs_2010_housevalue = acs_2010_housevalue[acs_2010_housevalue['mhv1'] != '-']
 
-acs_2010_housevalue = acs_2010_housevalue.astype({'medhousevalue_1':'int64', 'medhousevalue_e_1':'int64'})
+acs_2010_housevalue = acs_2010_housevalue.astype({'mhv1':'int64'})
 
-acs_2020_housevalue = acs_2020_housevalue.rename(columns = {'B25077_001E':'medhousevalue_2', 'B25077_001M':'medhousevalue_e_2'})
+acs_2020_housevalue = acs_2020_housevalue.rename(columns = {'B25077_001E':'mhv2', 'B25077_001M':'mhv_e2'})
 
-acs_2020_housevalue = acs_2020_housevalue[['GEO_ID', 'NAME', 'medhousevalue_2', 'medhousevalue_e_2']]
+acs_2020_housevalue = acs_2020_housevalue[['GEO_ID', 'NAME', 'mhv2']]
 
-acs_2020_housevalue = acs_2020_housevalue[acs_2020_housevalue['medhousevalue_2'] != '-']
+acs_2020_housevalue = acs_2020_housevalue[acs_2020_housevalue['mhv2'] != '-']
 
-acs_2020_housevalue = acs_2020_housevalue.astype({'medhousevalue_2':'int64', 'medhousevalue_e_2':'int64'})
+acs_2020_housevalue = acs_2020_housevalue.astype({'mhv2':'int64'})
 
-census_2000_housevalue = census_2000_housevalue.rename(columns = {'H085001':'medhousevalue_0'})
+census_2000_housevalue = census_2000_housevalue.rename(columns = {'H085001':'mhv0'})
 
-census_2000_housevalue = census_2000_housevalue[['GEO_ID', 'NAME', 'medhousevalue_0']]
+census_2000_housevalue = census_2000_housevalue[['GEO_ID', 'NAME', 'mhv0']]
 
-census_2000_housevalue['medhousevalue_0']=census_2000_housevalue['medhousevalue_0'].str.extract(pat='(\d+)', expand=False)
+census_2000_housevalue['mhv0']=census_2000_housevalue['mhv0'].str.extract(pat='(\d+)', expand=False)
 
-census_2000_housevalue = census_2000_housevalue.astype({'medhousevalue_0':'int64'})
+census_2000_housevalue = census_2000_housevalue.astype({'mhv0':'int64'})
 
 housevalue_merge = census_2000_housevalue.merge(acs_2010_housevalue, how = 'inner', on = ['GEO_ID','NAME']).merge(acs_2020_housevalue, how = 'inner', on = ['GEO_ID', 'NAME'])
 
@@ -167,10 +177,10 @@ housevalue_merge = census_2000_housevalue.merge(acs_2010_housevalue, how = 'inne
 #Import ACS_2020_yearbuilt.csv
 acs_2020_yearbuilt = pd.read_csv('ACS_2020_yearbuilt.csv', skiprows= [1]) 
 
-acs_2020_yearbuilt = acs_2020_yearbuilt.rename(columns ={'B25034_001E':'tot_houses', 'B25034_001M':'tot_houses_e', 'B25034_002E':'2014orlater', 'B25034_002M':'2014orlater_e', 'B25034_003E': '2010to2013', 'B25034_003M':'2010to2013_e', })
+acs_2020_yearbuilt = acs_2020_yearbuilt.rename(columns ={'B25034_001E':'tothous', 'B25034_001M':'tothous_e', 'B25034_002E':'y14topr', 'B25034_002M':'y14topr_e', 'B25034_003E': 'y10to13', 'B25034_003M':'y10to13_e', })
 
 #Select and rename relevant columns
-acs_2020_yearbuilt = acs_2020_yearbuilt[['GEO_ID', 'NAME', 'tot_houses', 'tot_houses_e', '2014orlater', '2014orlater_e', '2010to2013', '2010to2013_e']]
+acs_2020_yearbuilt = acs_2020_yearbuilt[['GEO_ID', 'NAME', 'tothous', 'y14topr',  'y10to13']]
 
 ##ADD TO FUNCTION
 #caluclate % built in the last 20 years and MOE
@@ -180,6 +190,16 @@ acs_2020_yearbuilt = acs_2020_yearbuilt[['GEO_ID', 'NAME', 'tot_houses', 'tot_ho
 dfs = [acs_tenure_merge, acs_educationbysex_merge, acs_raceeth_merge, acs_mfi_merge, housevalue_merge, acs_mhi_merge, acs_2020_yearbuilt]
 
 bates_df= reduce(lambda  left,right: pd.merge(left,right,on=['GEO_ID','NAME'], how='inner'), dfs)
+
+
+
+#merge with TIGER/Line shapefile
+boundaries = gpd.read_file('tl_2022_42_tract.shp')
+bates_df['GEO_ID'] = bates_df['GEO_ID'].apply(lambda x: x[-11:])
+
+bates_df_shp = boundaries.merge(bates_df, left_on = 'GEOID', right_on = 'GEO_ID', suffixes = ('_x', '_y'))
+
+bates_df_shp.to_file('bates_df_shp.shp')
 
 bates_df.to_csv('bates_df.csv', index = False)
 
