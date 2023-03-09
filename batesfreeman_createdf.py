@@ -7,8 +7,7 @@ import os
 from functools import reduce
 import geopandas as gpd
 
-os.chdir('/Users/winncostantini/gus8066/gentrification-indices/bates-freeman-data')
-
+os.chdir('/Users/wc555/gus8066/gentrification-indices/bates-freeman-data')
 
 ###DATA CLEANING###
 
@@ -197,9 +196,13 @@ bates_df= reduce(lambda  left,right: pd.merge(left,right,on=['GEO_ID','NAME'], h
 boundaries = gpd.read_file('tl_2022_42_tract.shp')
 bates_df['GEO_ID'] = bates_df['GEO_ID'].apply(lambda x: x[-11:])
 
-bates_df_shp = boundaries.merge(bates_df, left_on = 'GEOID', right_on = 'GEO_ID', suffixes = ('_x', '_y'))
+bates_df_geo = boundaries.merge(bates_df, left_on = 'GEOID', right_on = 'GEO_ID', suffixes = ('_x', '_y'))
 
-bates_df_shp.to_file('bates_df_shp.shp')
+bates_colnames = ['STATEFP', 'COUNTYFP', 'TRACTCE', 'GEOID', 'NAME_X', 'NAMELSAD', 'MTFCC', 'FUNCSTAT', 'ALAND', 'AWATER', 'INTPTLAT', 'INTPTLON', 'geometry', 'GEO_ID', 'NAME_y', 'pop_tenure_yr1', 'owners_yr1', 'renters_yr1', 'pop_tenure_yr2', 'owners_yr2', 'renters_yr2', 'pop_edu_yr1', 'pop_edu_m_yr1', 'pop_edu_m_yr1e', 'ASdeg_m_yr1', 'BAdeg_m_yr1', 'MAdeg_m_yr1', 'profdeg_m_yr1', 'drdeg_m_yr1', 'pop_edu_f_yr1', 'ASdeg_f_yr1', 'BAdeg_f_yr1', 'MAdeg_f_yr1', 'profdeg_f_yr1', 'drdeg_f_yr1', 'pop_edu_yr2', 'pop_edu_m_yr2', 'ASdeg_m_yr2', 'BAdeg_m_yr2', 'MAdeg_m_yr2', 'profdeg_m_yr2', 'drdeg_m_yr2', 'pop_edu_f_yr2', 'ASdeg_f_yr2', 'BAdeg_f_yr2', 'MAdeg_f_yr2', 'profdeg_f_yr2', 'drdeg_f_yr2', 'pop_race_yr1', 'white_yr1', 'pop_race_yr2', 'white_yr2', 'mfi_yr1', 'mfi_yr2', 'mhv_yr0', 'mhv_yr1', 'mhv_yr2', 'mhi_yr1', 'mhi_yr2', 'tothouse_yr2', 'newhouse_col1', 'newhouse_col2']                                                                                                                                                                                                                                                                                                                                    
+
+bates_df_geo.columns = bates_colnames
+
+bates_df_geo.drop(labels = ['STATEFP', 'COUNTYFP', 'TRACTCE', 'NAME_X', 'MTFCC', 'FUNCSTAT', 'GEO_ID', 'NAME_y'], axis = 1, inplace= True)
 
 bates_df.to_csv('bates_df.csv', index = False)
 
