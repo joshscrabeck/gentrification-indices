@@ -176,10 +176,10 @@ housevalue_merge = census_2000_housevalue.merge(acs_2010_housevalue, how = 'inne
 #Import ACS_2020_yearbuilt.csv
 acs_2020_yearbuilt = pd.read_csv('ACS_2020_yearbuilt.csv', skiprows= [1]) 
 
-acs_2020_yearbuilt = acs_2020_yearbuilt.rename(columns ={'B25034_001E':'tothous', 'B25034_001M':'tothous_e', 'B25034_002E':'y14topr', 'B25034_002M':'y14topr_e', 'B25034_003E': 'y10to13', 'B25034_003M':'y10to13_e', })
+acs_2020_yearbuilt = acs_2020_yearbuilt.rename(columns ={'B25034_001E':'tothous', 'B25034_001M':'tothous_e', 'B25034_002E':'y14topr', 'B25034_002M':'y14topr_e', 'B25034_003E': 'y10to13', 'B25034_003M':'y10to13_e', 'B25034_004E': 'y00to10'})
 
 #Select and rename relevant columns
-acs_2020_yearbuilt = acs_2020_yearbuilt[['GEO_ID', 'NAME', 'tothous', 'y14topr',  'y10to13']]
+acs_2020_yearbuilt = acs_2020_yearbuilt[['GEO_ID', 'NAME', 'tothous', 'y14topr',  'y10to13', 'y00to10']]
 
 ##ADD TO FUNCTION
 #caluclate % built in the last 20 years and MOE
@@ -190,7 +190,7 @@ dfs = [acs_tenure_merge, acs_educationbysex_merge, acs_raceeth_merge, acs_mfi_me
 
 bates_df= reduce(lambda  left,right: pd.merge(left,right,on=['GEO_ID','NAME'], how='inner'), dfs)
 
-
+#%%
 
 #merge with TIGER/Line shapefile
 boundaries = gpd.read_file('tl_2022_42_tract.shp')
@@ -198,7 +198,7 @@ bates_df['GEO_ID'] = bates_df['GEO_ID'].apply(lambda x: x[-11:])
 
 bates_df_geo = boundaries.merge(bates_df, left_on = 'GEOID', right_on = 'GEO_ID', suffixes = ('_x', '_y'))
 
-bates_colnames = ['STATEFP', 'COUNTYFP', 'TRACTCE', 'GEOID', 'NAME_X', 'NAMELSAD', 'MTFCC', 'FUNCSTAT', 'ALAND', 'AWATER', 'INTPTLAT', 'INTPTLON', 'geometry', 'GEO_ID', 'NAME_y', 'pop_tenure_yr1', 'owners_yr1', 'renters_yr1', 'pop_tenure_yr2', 'owners_yr2', 'renters_yr2', 'pop_edu_yr1', 'pop_edu_m_yr1', 'pop_edu_m_yr1e', 'ASdeg_m_yr1', 'BAdeg_m_yr1', 'MAdeg_m_yr1', 'profdeg_m_yr1', 'drdeg_m_yr1', 'pop_edu_f_yr1', 'ASdeg_f_yr1', 'BAdeg_f_yr1', 'MAdeg_f_yr1', 'profdeg_f_yr1', 'drdeg_f_yr1', 'pop_edu_yr2', 'pop_edu_m_yr2', 'ASdeg_m_yr2', 'BAdeg_m_yr2', 'MAdeg_m_yr2', 'profdeg_m_yr2', 'drdeg_m_yr2', 'pop_edu_f_yr2', 'ASdeg_f_yr2', 'BAdeg_f_yr2', 'MAdeg_f_yr2', 'profdeg_f_yr2', 'drdeg_f_yr2', 'pop_race_yr1', 'white_yr1', 'pop_race_yr2', 'white_yr2', 'mfi_yr1', 'mfi_yr2', 'mhv_yr0', 'mhv_yr1', 'mhv_yr2', 'mhi_yr1', 'mhi_yr2', 'tothouse_yr2', 'newhouse_col1', 'newhouse_col2']                                                                                                                                                                                                                                                                                                                                    
+bates_colnames = ['STATEFP', 'COUNTYFP', 'TRACTCE', 'GEOID', 'NAME_X', 'NAMELSAD', 'MTFCC', 'FUNCSTAT', 'ALAND', 'AWATER', 'INTPTLAT', 'INTPTLON', 'geometry', 'GEO_ID', 'NAME_y', 'pop_tenure_yr1', 'owners_yr1', 'renters_yr1', 'pop_tenure_yr2', 'owners_yr2', 'renters_yr2', 'pop_edu_yr1', 'pop_edu_m_yr1', 'pop_edu_m_yr1e', 'ASdeg_m_yr1', 'BAdeg_m_yr1', 'MAdeg_m_yr1', 'profdeg_m_yr1', 'drdeg_m_yr1', 'pop_edu_f_yr1', 'ASdeg_f_yr1', 'BAdeg_f_yr1', 'MAdeg_f_yr1', 'profdeg_f_yr1', 'drdeg_f_yr1', 'pop_edu_yr2', 'pop_edu_m_yr2', 'ASdeg_m_yr2', 'BAdeg_m_yr2', 'MAdeg_m_yr2', 'profdeg_m_yr2', 'drdeg_m_yr2', 'pop_edu_f_yr2', 'ASdeg_f_yr2', 'BAdeg_f_yr2', 'MAdeg_f_yr2', 'profdeg_f_yr2', 'drdeg_f_yr2', 'pop_race_yr1', 'white_yr1', 'pop_race_yr2', 'white_yr2', 'mfi_yr1', 'mfi_yr2', 'mhv_yr0', 'mhv_yr1', 'mhv_yr2', 'mhi_yr1', 'mhi_yr2', 'tothouse_yr2', 'newhouse_col1', 'newhouse_col2', 'newhousecol3']                                                                                                                                                                                                                                                                                                                                    
 
 bates_df_geo.columns = bates_colnames
 

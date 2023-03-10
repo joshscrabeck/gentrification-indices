@@ -8,10 +8,17 @@ from math import sqrt
 import numpy as np
 import geopandas as gpd
 
+#set dir
 os.chdir('/Users/wc555/gus8066/gentrification-indices')
 
+#import test dataset for census tracts
 from batesfreeman_createdf import bates_df_geo   
 bates_df_geo = gpd.GeoDataFrame(bates_df_geo, geometry = 'geometry', crs = 'EPSG: 4269')
+
+#create test df for citywide stats
+place_income_dict = {'mhi_place_y1': [36251] , 'mhi_place_y1_e' : [397] , 'mhi_place_yr2' : [49127] , 'mhi_place_y2_e' : [774], 'mfi_place_yr2' : [58090] , 'mfi_place_y2_e' : [1359]}
+df_place = pd.DataFrame.from_dict(place_income_dict)
+
 
 #%%
 
@@ -39,7 +46,8 @@ def moe_alltracts(df, col):
     return moe
 
 def moe_propagation(moe1, moe2):
-    
+    ''' This function calculates the margin of error that results from propagation two margins of error'''
+
     moe = sqrt((moe1**2) + (moe2**2))
     
     return moe
@@ -48,30 +56,125 @@ def moe_propagation(moe1, moe2):
 ###CREATE DERIVED COLUMNS AND VALUES NEEDED FOR INDICES###
 
 
-def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, pop_tenure_yr2, owners_yr2, renters_yr2, pop_edu_yr1, pop_edu_m_yr1, ASdeg_m_yr1, BAdeg_m_yr1, MAdeg_m_yr1, profdeg_m_yr1, drdeg_m_yr1, pop_edu_f_yr1, ASdeg_f_yr1, BAdeg_f_yr1, MAdeg_f_yr1, profdeg_f_yr1, drdeg_f_yr1, pop_edu_yr2, pop_edu_m_yr2, ASdeg_m_yr2, BAdeg_m_yr2, MAdeg_m_yr2, profdeg_m_yr2, drdeg_m_yr2, pop_edu_f_yr2, ASdeg_f_yr2, BAdeg_f_yr2, MAdeg_f_yr2, profdeg_f_yr2, drdeg_f_yr2, pop_race_yr1, white_yr1, pop_race_yr2, white_yr2, mfi_yr1, mfi_yr2, mhv_yr0, mhv_yr1, mhv_yr2, mhi_yr1, mhi_yr2, tothouse_yr2, newhouse_col1, newhouse_col2, inplace = False):
+def calc_batesfreeman(df_place, df_ct, infl_rate, cols_place = ['mhi_place_y1', 'mhi_place_y1_e', 'mhi_place_yr2', 'mhi_place_y2_e', 'mfi_place_yr2', 'mfi_place_y2_e'], cols_ct = ['pop_tenure_yr1', 'owners_yr1', 'renters_yr1', 'pop_tenure_yr2', 'owners_yr2', 'renters_yr2', 'pop_edu_yr1', 'pop_edu_m_yr1', 'ASdeg_m_yr1', 'BAdeg_m_yr1', 'MAdeg_m_yr1', 'profdeg_m_yr1', 'drdeg_m_yr1', 'pop_edu_f_yr1', 'ASdeg_f_yr1', 'BAdeg_f_yr1', 'MAdeg_f_yr1', 'profdeg_f_yr1', 'drdeg_f_yr1', 'pop_edu_yr2', 'pop_edu_m_yr2', 'ASdeg_m_yr2', 'BAdeg_m_yr2', 'MAdeg_m_yr2', 'profdeg_m_yr2', 'drdeg_m_yr2', 'pop_edu_f_yr2', 'ASdeg_f_yr2', 'BAdeg_f_yr2', 'MAdeg_f_yr2', 'profdeg_f_yr2', 'drdeg_f_yr2', 'pop_race_yr1', 'white_yr1', 'pop_race_yr2', 'white_yr2', 'mfi_yr2', 'mhv_yr0', 'mhv_yr1', 'mhv_yr2', 'mhi_yr1', 'mhi_yr2', 'tothouse_yr2', 'newhouse_col1', 'newhouse_col2', 'newhouse_col3'], inplace = False):
+    '''  
+    INPUT:
+        
+    df_place: df with single row and columns for income variables at the place-level
+    df_ct: dataframe with columns from Census and/or American Community Survey for three different years that span 20 years in 10 year intervals (ex: year 0 = 2000, year 1 = 2010, and year 2 = 2020)
+    infl_rate: inflation multiplier to adjust year 1 dollars to year 2 dollars
+    cols_place (ACS Variables)
+        0 'mhi_place_y1': B19013_001E
+        1 'mhi_place_y1_e': B19013_001M
+        2 'mhi_place_yr2': B19013_001E
+        3 'mhi_place_y2_e': B19013_001M
+        4 'mfi_place_yr2': B19113_001E
+        5 'mfi_place_y2_e': B19113_001M
+     
+    cols_ct (ACS and Census Variables)
+        0 'pop_tenure_yr1': B25003_001E
+        1 'owners_yr1': B25003_002E
+        2 'renters_yr1': B25003_003E
+        3 'pop_tenure_yr2': B25003_001E
+        4 'owners_yr2': B25003_002E
+        5 'renters_yr2': B25003_003E
+        6 'pop_edu_yr1': B15002_001E
+        7 'pop_edu_m_yr1': B15002_002E
+        8 'ASdeg_m_yr1': B15002_014E
+        9 'BAdeg_m_yr1': B15002_015E
+        10 'MAdeg_m_yr1': B15002_016E
+        11 'profdeg_m_yr1': B15002_017E
+        12 'drdeg_m_yr1': B15002_018E
+        13 'pop_edu_f_yr1': B15002_019E
+        14 'ASdeg_f_yr1': B15002_031E
+        15 'BAdeg_f_yr1': B15002_032E
+        16'MAdeg_f_yr1': B15002_033E
+        17 'profdeg_f_yr1': B15002_034E
+        18 'drdeg_f_yr1': B15002_035E
+        19 'pop_edu_yr2': B15002_001E
+        20 'pop_edu_m_yr2': B15002_002E
+        21'ASdeg_m_yr2': B15002_014E
+        22 'BAdeg_m_yr2': B15002_015E
+        23 'MAdeg_m_yr2': B15002_016E
+        24 'profdeg_m_yr2': B15002_017E
+        25 'drdeg_m_yr2': B15002_018E
+        26 'pop_edu_f_yr2': B15002_019E
+        27 'ASdeg_f_yr2': B15002_031E
+        28 'BAdeg_f_yr2': B15002_032E
+        29 'MAdeg_f_yr2': B15002_033E
+        30 'profdeg_f_yr2': B15002_034E
+        31 'drdeg_f_yr2': B15002_035E
+        32 'pop_race_yr1': B03002_001E
+        33 'white_yr1': B03002_003E
+        34 'pop_race_yr2': B03002_001E
+        35 'white_yr2': B03002_003E
+        36 'mfi_yr2': B19113_001E
+        37 'mhv_yr0': H085001, B25077_001E
+        38 'mhv_yr1': B25077_001E
+        39 'mhv_yr2': B25077_001E
+        40 'mhi_yr1': B19013_001E
+        41 'mhi_yr2': B19013_001E
+        42 'tothouse_yr2': B25034_001E
+        43 'newhouse_col1': B25034_002E
+        44 'newhouse_col2': B25034_003E
+        45 'newhouse_col3': B25034_004E
+    inplace: If TRUE, function returns the original/input df with new bates-freeman index columns appended, if FALSE returns just GEOID, NAME, geometry, plygon attributes and the newly generated bates-freeman columns
+    
+    OUTPUT COLUMNS
+    
+    #Bates Vulnerability Index#
+    'renter_v': 
+    'poc_v': 
+    'nocollege_v' ;
+    'mfi_v' ;
+    'v_index'
+    
+    #Bates Gentrification-Related Demographic Change Index#
+    'tenure_change':
+    'race_change':
+    'edu_change':
+    'income_change':
+    'dem_change_index':
+    
+    #Bates Home Value Typologies Index#
+    homevalueq_yr0':
+    'homevalueq_yr2':
+    'homevalueq_change_01':
+    'homevalueq_change_12':
+    'homevalueq_change_02':
+    'mhv_type':
+    
+    #Freeman Index# ***This function assumes that all tracts analyzed meet Freeman's critera of being in the "central city" of a metropolitan area***
+    'nocollege_f_index':
+    'mhi_f_index':
+    'mhv_f_index':
+    'freeman':
+
+    
+    '''
     
     ##Create two deep copies##
     #The first will be used at the end of the function to return the orginal input df with the new output columns appended.
     #The second will make a copy that the rest of the function uses to calculate all intermediate columns (needed to caclulate final output columns) without adding them to the initial input df.
-    copy_df = df.copy(deep = True)
-    df = df.copy(deep = True)    
+    copy_df = df_ct.copy(deep = True)
+    df = df_ct.copy(deep = True)    
     
     ###CREATE DERIVED COLUMNS AND VALUES NEEDED FOR INDICES###
 
     ##TENURE##
 
     #create new columns with proportion of renters in each tract for years 1 and 2
-    df['renterp_yr1'] = df[renters_yr1]/df[pop_tenure_yr1]
+    df['renterp_yr1'] = df[cols_ct[2]]/df[cols_ct[0]]
     df['ownerp_yr1'] = 1 - df['renterp_yr1']
-    df['renterp_yr2'] = df[renters_yr2]/df[pop_tenure_yr2]
+    df['renterp_yr2'] = df[cols_ct[5]]/df[cols_ct[3]]
     df['ownerp_yr2'] = 1 - df['renterp_yr2']
 
     #calculate the citywide proportion of renters for years 1 and 2
-    citywide_renters_1 = df[renters_yr1].sum()
-    citywide_tenure_1 = df[pop_tenure_yr1].sum()
+    citywide_renters_1 = df[cols_ct[2]].sum()
+    citywide_tenure_1 = df[cols_ct[0]].sum()
 
-    citywide_renters_2 = df[renters_yr2].sum()
-    citywide_tenure_2 = df[pop_tenure_yr2].sum()
+    citywide_renters_2 = df[cols_ct[5]].sum()
+    citywide_tenure_2 = df[cols_ct[3]].sum()
 
     citywide_renter_p_1 = citywide_renters_1/citywide_tenure_1
     citywide_owner_p_1 = 1 - citywide_renter_p_1
@@ -79,12 +182,12 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
     citywide_owner_p_2 = 1 - citywide_renter_p_2
 
     #calculate the citywide moe for the number of renters and total number of households for years 1 and 2
-    citywide_owner_e_1 = moe_alltracts(df, owners_yr1)
-    citywide_tenure_e_1 = moe_alltracts(df, pop_tenure_yr1)
+    citywide_owner_e_1 = moe_alltracts(df, cols_ct[1])
+    citywide_tenure_e_1 = moe_alltracts(df, cols_ct[0])
 
-    citywide_renter_e_2 = moe_alltracts(df, renters_yr2)
-    citywide_owner_e_2 = moe_alltracts(df, owners_yr2)
-    citywide_tenure_e_2 = moe_alltracts(df, pop_tenure_yr2)
+    citywide_renter_e_2 = moe_alltracts(df, cols_ct[5])
+    citywide_owner_e_2 = moe_alltracts(df, cols_ct[4])
+    citywide_tenure_e_2 = moe_alltracts(df, cols_ct[3])
 
     #assign variables to calculate moe for citywide proportion of owners for year 1
     den_1 = citywide_tenure_1
@@ -124,35 +227,35 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
     ##RACE AND ETHNICITY##
 
     #Calculate proportion of POC and white pop for each tract for years 1 and 2
-    df['poc_yr1'] = df[pop_race_yr1] - df[white_yr1]
-    df['pocp_yr1'] = (df['poc_yr1']/df[pop_race_yr1])
+    df['poc_yr1'] = df[cols_ct[32]] - df[cols_ct[33]]
+    df['pocp_yr1'] = (df['poc_yr1']/df[cols_ct[32]])
     df['whitep_yr1'] = 1 - df['pocp_yr1']
 
-    df['poc_yr2'] = df[pop_race_yr2] - df[white_yr2]
-    df['pocp_yr2'] = (df['poc_yr2']/df[pop_race_yr1])
+    df['poc_yr2'] = df['pop_race_yr2'] - df['white_yr2']
+    df['pocp_yr2'] = (df['poc_yr2']/df['pop_race_yr1'])
     df['whitep_yr2'] = 1 - df['pocp_yr2']
 
     #Calculate citywide proportion of people of color for years 1 and 2
 
-    citywide_pop_race_1 = df[pop_race_yr1].sum()
+    citywide_pop_race_1 = df[cols_ct[32]].sum()
     citywide_poc_1 = df['poc_yr1'].sum()
     citywide_poc_p_1 = citywide_poc_1/citywide_pop_race_1
     citywide_white_p_1 = 1 - citywide_poc_p_1 
 
 
-    citywide_pop_race_2 = df[pop_race_yr2].sum()
+    citywide_pop_race_2 = df[cols_ct[34]].sum()
     citywide_poc_2 = df['poc_yr2'].sum()
     citywide_poc_p_2 = citywide_poc_2/citywide_pop_race_2
     citywide_white_p_2 = 1 - citywide_poc_p_2 
 
     #calculate the citywide moe for the number of poc and total pop for years 1 and 2
     #citywide_poc_e_1 = moe_alltracts(df, 'poc_1')
-    citywide_white_e_1 = moe_alltracts(df, white_yr1)
-    citywide_pop_race_e_1 = moe_alltracts(df, pop_race_yr1)
+    citywide_white_e_1 = moe_alltracts(df, cols_ct[33])
+    citywide_pop_race_e_1 = moe_alltracts(df, cols_ct[32])
 
     citywide_poc_e_2 = moe_alltracts(df, 'poc_yr2')
-    citywide_white_e_2 = moe_alltracts(df, white_yr2)
-    citywide_pop_race_e_2 = moe_alltracts(df, pop_race_yr2)
+    citywide_white_e_2 = moe_alltracts(df, cols_ct[35])
+    citywide_pop_race_e_2 = moe_alltracts(df, cols_ct[34])
 
     #assign variables to calculate moe for citywide proportion for year 1 for white pop
     den_4 = citywide_pop_race_1
@@ -192,29 +295,29 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
     ##EDUCATIONAL ATTAINMENT##
 
     #Calculate proportion 25+ population with and without a college degree for each tract for years 1 and 2
-    df['nocollege_yr1'] = (df[pop_edu_yr1]) - (df[ASdeg_m_yr1] + df[BAdeg_m_yr1] + df[MAdeg_m_yr1] + df[profdeg_m_yr1] + df[drdeg_m_yr1]) - (df[ASdeg_f_yr1] + df[BAdeg_f_yr1] + df[MAdeg_f_yr1] + df[profdeg_f_yr1] + df[drdeg_f_yr1])
+    df['nocollege_yr1'] = (df[cols_ct[6]]) - (df[cols_ct[8]] + df[cols_ct[9]] + df[cols_ct[10]] + df[cols_ct[11]] + df[cols_ct[12]]) - (df[cols_ct[14]] + df[cols_ct[15]] + df[cols_ct[16]] + df[cols_ct[17]] + df[cols_ct[18]])
 
-    df['college_yr1'] = df[pop_edu_yr1] - df['nocollege_yr1']
+    df['college_yr1'] = df[cols_ct[6]] - df['nocollege_yr1']
 
-    df['nocollegep_yr1'] = df['nocollege_yr1'] / df[pop_edu_yr1]
+    df['nocollegep_yr1'] = df['nocollege_yr1'] / df[cols_ct[6]]
     df['collegep_yr1'] = 1 - df['nocollegep_yr1']
 
-    df['nocollege_yr2'] = (df[pop_edu_yr2]) - (df[ASdeg_m_yr2] + df[BAdeg_m_yr2] + df[MAdeg_m_yr2] + df[profdeg_m_yr2] + df[drdeg_m_yr2]) - (df[ASdeg_f_yr2] + df[BAdeg_f_yr2] + df[MAdeg_f_yr2] + df[profdeg_f_yr2] + df[drdeg_f_yr2])
+    df['nocollege_yr2'] = (df[cols_ct[19]]) - (df[cols_ct[21]] + df[cols_ct[22]] + df[cols_ct[23]] + df[cols_ct[24]] + df[cols_ct[25]]) - (df[cols_ct[27]] + df[cols_ct[28]] + df[cols_ct[29]] + df[cols_ct[30]] + df[cols_ct[31]])
 
-    df['college_yr2'] = df[pop_edu_yr2] - df['nocollege_yr2']
+    df['college_yr2'] = df[cols_ct[19]] - df['nocollege_yr2']
 
-    df['nocollegep_yr2'] = df['nocollege_yr2'] / df[pop_edu_yr2]
+    df['nocollegep_yr2'] = df['nocollege_yr2'] / df[cols_ct[19]]
     df['collegep_yr2'] = 1 - df['nocollegep_yr2']
 
     #Calculate citywide proportion of people without a college degree for years 1 and 2
 
-    citywide_pop_edu_1 = df[pop_edu_yr1].sum()
+    citywide_pop_edu_1 = df[cols_ct[6]].sum()
     citywide_nocollege_1 = df['nocollege_yr1'].sum()
     #citywide_college_1 = citywide_pop_edu_1 - citywide_nocollege_1
     citywide_nocollege_p_1 = citywide_nocollege_1/citywide_pop_edu_1
     citywide_college_p_1 = 1 - citywide_nocollege_p_1
 
-    citywide_pop_edu_2 = df[pop_edu_yr2].sum()
+    citywide_pop_edu_2 = df[cols_ct[19]].sum()
     citywide_nocollege_2 = df['nocollege_yr2'].sum()
     #citywide_college_2 = citywide_pop_edu_2 - citywide_nocollege_2
     citywide_nocollege_p_2 = citywide_nocollege_2/citywide_pop_edu_2
@@ -224,11 +327,11 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
     #calculate the citywide moe for the number of people w/o college degrees and total pop for years 1 and 2
     #citywide_nocollege_e_1 = moe_alltracts(df, 'nocollege_1')
     citywide_college_e_1 = moe_alltracts(df, 'college_yr1')
-    citywide_pop_edu_e_1 = moe_alltracts(df, pop_edu_yr1)
+    citywide_pop_edu_e_1 = moe_alltracts(df, cols_ct[6])
 
     citywide_nocollege_e_2 = moe_alltracts(df, 'nocollege_yr2')
     citywide_college_e_2 = moe_alltracts(df, 'college_yr2')
-    citywide_pop_edu_e_2 = moe_alltracts(df, pop_edu_yr2)
+    citywide_pop_edu_e_2 = moe_alltracts(df, cols_ct[19])
 
     #assign variables to calculate moe for citywide proportion for year 1 - college
     den_7 = citywide_pop_edu_1
@@ -267,21 +370,20 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
 
     ##MEDIAN HOUSEHOLD INCOME##
 
-    #Still need to look into MOE for this calculation
-
     #adjust year 1 values for inflation
-    df['mhi_yr1_adj'] = df[mhi_yr1] * float(infl_rate)
+    df['mhi_yr1_adj'] = df[cols_ct[41]] * float(infl_rate)
 
-    #Calculate citywide average mfi years 1 and 2
-    citywide_meanmhi_1 = df['mhi_yr1_adj'].mean()
-    citywide_meanmhi_2 = df[mhi_yr2].mean()
+    #Assign variables for citywide mhi years 1 and 2
+    citywide_mhi_1 = df_place.iloc[0][cols_place[0]] + df_place.iloc[0][cols_place[1]]
+    citywide_mhi_2 = df_place.iloc[0][cols_place[2]] + df_place.iloc[0][cols_place[3]]
 
-    #For each tract, calculate change in mfi from year 1 to year 2
-    df['mhip_change'] = (df[mhi_yr2] - df['mhi_yr1_adj'])/df[mhi_yr2]
+    #For each tract, calculate change in mhi from year 1 to year 2
+    df['mhip_change'] = (df[cols_ct[42]] - df['mhi_yr1_adj'])/df[cols_ct[42]]
 
-    #Calculate the citywide change in mfi from year 1 to year 2 and the moe
-    citywide_mhi_pchange = (citywide_meanmhi_2 - citywide_meanmhi_1)/citywide_meanmhi_2
+    #Calculate the citywide change in mhi from year 1 to year 2 and the moe
+    citywide_mhi_pchange = (citywide_mhi_2 - citywide_mhi_1)/citywide_mhi_2
 
+    ###ADD MSA STAT HERE###
 
     ###INDEX 1: VULNERABILITY SCORE###
 
@@ -314,13 +416,15 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
     df['nocollege_v'] = np.where(df['nocollegep_yr2'] >= citywide_nocollege_threshold, 1, 0)
 
 
-    ##MFI##
+    ##Median Family Income##
 
-    citywide_meanmfi_2 = df[mfi_yr2].mean()
-    citywide_mfi_threshold = citywide_meanmfi_2 * 0.8 #threshold is 80% of median mfi
+    citywide_mfi_2 = df_place.iloc[0][cols_place[4]] + df_place.iloc[0][cols_place[5]]
+    citywide_mfi_threshold = citywide_mfi_2 * 0.8 #threshold is 80% of median mfi
+    
+    ###ADD MSA STAT HERE###
 
     #Caluclate whether the MFI for each tract is at or below 80% of the citywide MFI
-    df['mfi_v'] = np.where(df[mfi_yr2] <= citywide_mfi_threshold, 1, 0)
+    df['mfi_v'] = np.where(df[cols_ct[36]] <= citywide_mfi_threshold, 1, 0)
 
 
     ##TOTAL VULNERABILITY  SCORE##
@@ -374,31 +478,31 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
     #Calculate quintiles for year 0 and year 2
 
     #year 0
-    df['homevalueq_yr0'] = pd.qcut(df[mhv_yr0], 5, labels = [0,1,2,3,4]).astype('int')
+    df['homevalueq_yr0'] = pd.qcut(df[cols_ct[37]], 5, labels = [0,1,2,3,4]).astype('int')
 
     df['homevalueq_yr0'] = np.where(df['homevalueq_yr0'] <= 2, 'lowmod', 'high')
 
     #year 2
-    df['homevalueq_yr2'] = pd.qcut(df[mhv_yr2], 5, labels = [0,1,2,3,4]).astype('int')
+    df['homevalueq_yr2'] = pd.qcut(df[cols_ct[39]], 5, labels = [0,1,2,3,4]).astype('int')
 
     df['homevalueq_yr2'] = df['homevalueq_yr2'] = np.where(df['homevalueq_yr2'] <= 2, 'lowmod', 'high')
 
     ##CHANGE 2000-2010##
     #Calculate change in median value for each tract and quintiles
-    df['homevalueq_change_01'] = df[mhv_yr1] - df[mhv_yr0]
+    df['homevalueq_change_01'] = df[cols_ct[38]] - df[cols_ct[37]]
     df['homevalueq_change_01'] = pd.qcut(df['homevalueq_change_01'], 5, labels = [0,1,2,3,4]).astype('int')
     df['homevalueq_change_01'] = np.where(df['homevalueq_change_01'] <= 2, 'lowmod', 'high')
 
 
     ##CHANGE 2010-2020##
     #Calculate change in median value for each tract and quintiles
-    df['homevalueq_change_12'] = df[mhv_yr2] - df[mhv_yr1]
+    df['homevalueq_change_12'] = df[cols_ct[39]] - df[cols_ct[38]]
     df['homevalueq_change_12'] = pd.qcut(df['homevalueq_change_12'], 5, labels = [0,1,2,3,4]).astype('int')
     df['homevalueq_change_12'] = np.where(df['homevalueq_change_12'] <= 2, 'lowmod', 'high')
 
     ##CHANGE 2000-2020##
     #Calculate change in median value for each tract and quintiles
-    df['homevalueq_change_02'] = df[mhv_yr2] - df[mhv_yr0]
+    df['homevalueq_change_02'] = df[cols_ct[39]] - df[cols_ct[37]]
     df['homevalueq_change_02'] = pd.qcut(df['homevalueq_change_02'], 5, labels = [0,1,2,3,4]).astype('int')
     df['homevalueq_change_02'] = np.where(df['homevalueq_change_02'] <= 2, 'lowmod', 'high')
 
@@ -459,10 +563,18 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
 
     ##YEAR STRUCTURE BUILT##
     #Calculate whether the % housing build in last 20 years in each tract in 2020 is below the citywide median and 40th percentile
+    
+    if len(cols_ct) == 45:
+        
+        df['newhousp'] = (df[cols_ct[43]] + df[cols_ct[44]])/df[cols_ct[42]]
+    
+    else: 
+        
+        df['newhousp'] = (df[cols_ct[43]] + df[cols_ct[44]] + df[cols_ct[45]])/df['tothouse_yr2']
 
-    df['newhousp'] = (df[newhouse_col1] + df[newhouse_col2])/df[tothouse_yr2]
+    
     citywide_newhous_med = df['newhousp'].median()
-
+    
     df['newhous_f_index'] = np.where(df['newhousp'] < citywide_newhous_med, 1, 0)
 
 
@@ -471,19 +583,20 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
 
     df['nocollege_change'] = df['nocollegep_yr2'] - df['nocollegep_yr1']
 
-    citywide_nocolch = (df['nocollege_yr2'].sum()/df[pop_edu_yr2].sum()) - (df['nocollege_yr1'].sum()/df[pop_edu_yr1].sum())
+    citywide_nocolch = (df['nocollege_yr2'].sum()/df[cols_ct[19]].sum()) - (df['nocollege_yr1'].sum()/df[cols_ct[6]].sum())
 
     df['nocollege_f_index'] = np.where(df['nocollege_change'] > citywide_nocolch, 1, 0)
 
 
     ##MEDIAN HOUSEHOLD INCOME
 
-    df['mhi_f_index'] = np.where(df[mhi_yr1] < df[mhi_yr1].mean(), 1, 0 )
+    df['mhi_f_index'] = np.where(df[cols_ct[40]] < df_place.iloc[0][cols_place[0]], 1, 0 )
+    ###CHANGE TO MSA STAT
 
     ##HOUSING VALUE##
     #Calcuate if median housing values 2010-2020 increased (yes or no)
 
-    df['mhv_f_index'] = np.where((df[mhv_yr2] - df[mhv_yr1]) > 0, 1, 0)
+    df['mhv_f_index'] = np.where((df[cols_ct[41]] - df[cols_ct[40]]) > 0, 1, 0)
 
 
     ##FREEMAN SCORE##
@@ -502,7 +615,6 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
     else:
         output = pd.merge(copy_df, newcolumns, left_index= True, right_index = True)
     
-    print(df)
     
     return output
 
@@ -511,9 +623,9 @@ def calc_batesfreeman(df, infl_rate, pop_tenure_yr1, owners_yr1, renters_yr1, po
 ###TEST###
 
 
-newdf = calc_batesfreeman(bates_df_geo, 1.19, 'pop_tenure_yr1', 'owners_yr1', 'renters_yr1', 'pop_tenure_yr2', 'owners_yr2', 'renters_yr2', 'pop_edu_yr1', 'pop_edu_m_yr1', 'ASdeg_m_yr1', 'BAdeg_m_yr1', 'MAdeg_m_yr1', 'profdeg_m_yr1', 'drdeg_m_yr1', 'pop_edu_f_yr1', 'ASdeg_f_yr1', 'BAdeg_f_yr1', 'MAdeg_f_yr1', 'profdeg_f_yr1', 'drdeg_f_yr1', 'pop_edu_yr2', 'pop_edu_m_yr2', 'ASdeg_m_yr2', 'BAdeg_m_yr2', 'MAdeg_m_yr2', 'profdeg_m_yr2', 'drdeg_m_yr2', 'pop_edu_f_yr2', 'ASdeg_f_yr2', 'BAdeg_f_yr2', 'MAdeg_f_yr2', 'profdeg_f_yr2', 'drdeg_f_yr2', 'pop_race_yr1', 'white_yr1', 'pop_race_yr2', 'white_yr2', 'mfi_yr1', 'mfi_yr2', 'mhv_yr0', 'mhv_yr1', 'mhv_yr2', 'mhi_yr1', 'mhi_yr2', 'tothouse_yr2', 'newhouse_col1', 'newhouse_col2', inplace = False)
+newdf = calc_batesfreeman(df_place, bates_df_geo, 1.19, cols_place = ['mhi_place_y1', 'mhi_place_y1_e', 'mhi_place_yr2', 'mhi_place_y2_e', 'mfi_place_yr2', 'mfi_place_y2_e'], cols_ct = ['pop_tenure_yr1', 'owners_yr1', 'renters_yr1', 'pop_tenure_yr2', 'owners_yr2', 'renters_yr2', 'pop_edu_yr1', 'pop_edu_m_yr1', 'ASdeg_m_yr1', 'BAdeg_m_yr1', 'MAdeg_m_yr1', 'profdeg_m_yr1', 'drdeg_m_yr1', 'pop_edu_f_yr1', 'ASdeg_f_yr1', 'BAdeg_f_yr1', 'MAdeg_f_yr1', 'profdeg_f_yr1', 'drdeg_f_yr1', 'pop_edu_yr2', 'pop_edu_m_yr2', 'ASdeg_m_yr2', 'BAdeg_m_yr2', 'MAdeg_m_yr2', 'profdeg_m_yr2', 'drdeg_m_yr2', 'pop_edu_f_yr2', 'ASdeg_f_yr2', 'BAdeg_f_yr2', 'MAdeg_f_yr2', 'profdeg_f_yr2', 'drdeg_f_yr2', 'pop_race_yr1', 'white_yr1', 'pop_race_yr2', 'white_yr2', 'mfi_yr2', 'mhv_yr0', 'mhv_yr1', 'mhv_yr2', 'mhi_yr1', 'mhi_yr2', 'tothouse_yr2', 'newhouse_col1', 'newhouse_col2'], inplace = False)
 
-samedf = calc_batesfreeman(bates_df_geo, 1.19, 'pop_tenure_yr1', 'owners_yr1', 'renters_yr1', 'pop_tenure_yr2', 'owners_yr2', 'renters_yr2', 'pop_edu_yr1', 'pop_edu_m_yr1', 'ASdeg_m_yr1', 'BAdeg_m_yr1', 'MAdeg_m_yr1', 'profdeg_m_yr1', 'drdeg_m_yr1', 'pop_edu_f_yr1', 'ASdeg_f_yr1', 'BAdeg_f_yr1', 'MAdeg_f_yr1', 'profdeg_f_yr1', 'drdeg_f_yr1', 'pop_edu_yr2', 'pop_edu_m_yr2', 'ASdeg_m_yr2', 'BAdeg_m_yr2', 'MAdeg_m_yr2', 'profdeg_m_yr2', 'drdeg_m_yr2', 'pop_edu_f_yr2', 'ASdeg_f_yr2', 'BAdeg_f_yr2', 'MAdeg_f_yr2', 'profdeg_f_yr2', 'drdeg_f_yr2', 'pop_race_yr1', 'white_yr1', 'pop_race_yr2', 'white_yr2', 'mfi_yr1', 'mfi_yr2', 'mhv_yr0', 'mhv_yr1', 'mhv_yr2', 'mhi_yr1', 'mhi_yr2', 'tothouse_yr2', 'newhouse_col1', 'newhouse_col2', inplace = True)
+samedf = calc_batesfreeman(df_place, bates_df_geo, 1.19, cols_place = ['mhi_place_y1', 'mhi_place_y1_e', 'mhi_place_yr2', 'mhi_place_y2_e', 'mfi_place_yr2', 'mfi_place_y2_e'], cols_ct = ['pop_tenure_yr1', 'owners_yr1', 'renters_yr1', 'pop_tenure_yr2', 'owners_yr2', 'renters_yr2', 'pop_edu_yr1', 'pop_edu_m_yr1', 'ASdeg_m_yr1', 'BAdeg_m_yr1', 'MAdeg_m_yr1', 'profdeg_m_yr1', 'drdeg_m_yr1', 'pop_edu_f_yr1', 'ASdeg_f_yr1', 'BAdeg_f_yr1', 'MAdeg_f_yr1', 'profdeg_f_yr1', 'drdeg_f_yr1', 'pop_edu_yr2', 'pop_edu_m_yr2', 'ASdeg_m_yr2', 'BAdeg_m_yr2', 'MAdeg_m_yr2', 'profdeg_m_yr2', 'drdeg_m_yr2', 'pop_edu_f_yr2', 'ASdeg_f_yr2', 'BAdeg_f_yr2', 'MAdeg_f_yr2', 'profdeg_f_yr2', 'drdeg_f_yr2', 'pop_race_yr1', 'white_yr1', 'pop_race_yr2', 'white_yr2', 'mfi_yr2', 'mhv_yr0', 'mhv_yr1', 'mhv_yr2', 'mhi_yr1', 'mhi_yr2', 'tothouse_yr2', 'newhouse_col1', 'newhouse_col2'], inplace = True)
 
 
 #%%
